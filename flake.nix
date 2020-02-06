@@ -92,6 +92,34 @@
               license = with final.stdenv.lib.licenses; [ artistic1 ];
             };
           };
+          StringInterpolate = perlPackages.buildPerlPackage {
+            pname = "String-Interpolate";
+            version = "0.32";
+            src = fetchurl {
+              url = "mirror://cpan/authors/id/N/NE/NEILB/String-Interpolate-0.32.tar.gz";
+              sha256 = "c729d89848f55a357bcf97b79b78b6b92b263e4c3c92747e7ded3639fe5ddc95";
+            };
+            propagatedBuildInputs = with perlPackages; [ PadWalker SafeHole ];
+            meta = {
+              homepage = https://github.com/neilbowers/String-Interpolate;
+              description = "Wrapper for builtin the Perl interpolation engine";
+              license = with stdenv.lib.licenses; [ artistic1 gpl1Plus ];
+            };
+          };
+          SafeHole = perlPackages.buildPerlModule {
+            pname = "Safe-Hole";
+            version = "0.14";
+            src = fetchurl {
+              url = "mirror://cpan/authors/id/T/TO/TODDR/Safe-Hole-0.14.tar.gz";
+              sha256 = "f4f56e8bbd06c4fe4ae06db12186decadfbac1ea775ea18c6c0289481d15ec05";
+            };
+            buildInputs = with perlPackages; [ ModuleBuild ];
+            meta = {
+              homepage = http://github.com/toddr/Safe-Hole;
+              description = "Lib/Safe/Hole.pm";
+              license = with stdenv.lib.licenses; [ artistic1 gpl1Plus ];
+            };
+          };
         };
 
         hydra = with final; let
@@ -141,6 +169,7 @@
                 SQLSplitStatement
                 SetScalar
                 Starman
+                StringInterpolate
                 SysHostnameLong
                 TermSizeAny
                 TestMore
@@ -484,6 +513,48 @@
 
         container = nixosConfigurations.container.config.system.build.toplevel;
       };
+
+      tests.githubstatus = genAttrs' (system:
+        with import (nixpkgs + "/nixos/lib/testing.nix") { inherit system; };
+        simpleTest {
+          machine = { pkgs, ... }: {
+            imports = [ (hydraServer build.${system}) ];
+            environment.systemPackages = [ pkgs.git ];
+            services.gitDaemon.enable = true;
+            services.hydra-dev.extraConfig = ''
+              <githubstatus>
+                jobs = sample:.*
+                inputs = src
+                test = 1
+              </githubstatus>
+            '';
+          };
+          testScript = ''
+            $machine->waitForJob("hydra-init");
+            # Create an admin account and some other state.
+            $machine->succeed
+                ( "su - hydra -c \"hydra-create-user root --email-address 'alice\@example.org' --password foobar --role admin\""
+                , "mkdir /run/jobset"
+                , "chmod 755 /run/jobset"
+                , "cp ${./tests/github/failing-job.nix} /run/jobset/default.nix"
+                , "chmod 644 /run/jobset/default.nix"
+                , "git config --global user.email root\@hydra-test.xyz; git config --global user.name root"
+                , "cd /run/jobset && git init && git add . && git commit --all -m 'initial commit'"
+                , "chown -R hydra /run/jobset"
+                );
+            # Wait until hydra-server can receive HTTP requests
+            $machine->waitForJob("hydra-server");
+            $machine->waitForOpenPort("3000");
+            # running it manually to check stderr output
+            $machine->stopJob("hydra-notify");
+            # Setup the project and jobset
+            $machine->succeed(
+              "su - hydra -c 'perl -I ${build.${system}.perlDeps}/lib/perl5/site_perl ${./tests/github/setup.pl}' >&2");
+            my $output = $machine->mustSucceed("hydra-notify --once 2>&1");
+            $output =~ m!GithubStatus_Debug POSTing to.*repos/run/jobset/statuses!
+              or die "GithubStatus plugin did not activate";
+          '';
+      });
 
       checks.x86_64-linux.build = hydraJobs.build.x86_64-linux;
       checks.x86_64-linux.install = hydraJobs.tests.install.x86_64-linux;
