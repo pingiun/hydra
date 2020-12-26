@@ -515,10 +515,10 @@
       };
 
       tests.githubstatus =
-        with import (nixpkgs + "/nixos/lib/testing.nix") { inherit system; };
+        with import (nixpkgs + "/nixos/lib/testing.nix") { system = "x86_64-linux"; };
         simpleTest {
           machine = { pkgs, ... }: {
-            imports = [ (hydraServer build.${system}) ];
+            imports = [ hydraServer ];
             environment.systemPackages = [ pkgs.git ];
             services.gitDaemon.enable = true;
             services.hydra-dev.extraConfig = ''
@@ -549,7 +549,7 @@
             $machine->stopJob("hydra-notify");
             # Setup the project and jobset
             $machine->succeed(
-              "su - hydra -c 'perl -I ${build.${system}.perlDeps}/lib/perl5/site_perl ${./tests/github/setup.pl}' >&2");
+              "su - hydra -c 'perl -I ${build."x86_64-linux".perlDeps}/lib/perl5/site_perl ${./tests/github/setup.pl}' >&2");
             my $output = $machine->mustSucceed("hydra-notify --once 2>&1");
             $output =~ m!GithubStatus_Debug POSTing to.*repos/run/jobset/statuses!
               or die "GithubStatus plugin did not activate";
