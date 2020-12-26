@@ -95,29 +95,29 @@
           StringInterpolate = prev.perlPackages.buildPerlPackage {
             pname = "String-Interpolate";
             version = "0.32";
-            src = fetchurl {
+            src = final.fetchurl {
               url = "mirror://cpan/authors/id/N/NE/NEILB/String-Interpolate-0.32.tar.gz";
               sha256 = "c729d89848f55a357bcf97b79b78b6b92b263e4c3c92747e7ded3639fe5ddc95";
             };
-            propagatedBuildInputs = with prev.perlPackages; [ PadWalker SafeHole ];
+            propagatedBuildInputs = with final.perlPackages; [ PadWalker SafeHole ];
             meta = {
               homepage = https://github.com/neilbowers/String-Interpolate;
               description = "Wrapper for builtin the Perl interpolation engine";
-              license = with stdenv.lib.licenses; [ artistic1 gpl1Plus ];
+              license = with final.stdenv.lib.licenses; [ artistic1 gpl1Plus ];
             };
           };
           SafeHole = prev.perlPackages.buildPerlModule {
             pname = "Safe-Hole";
             version = "0.14";
-            src = fetchurl {
+            src = final.fetchurl {
               url = "mirror://cpan/authors/id/T/TO/TODDR/Safe-Hole-0.14.tar.gz";
               sha256 = "f4f56e8bbd06c4fe4ae06db12186decadfbac1ea775ea18c6c0289481d15ec05";
             };
-            buildInputs = with prev.perlPackages; [ ModuleBuild ];
+            buildInputs = with final.perlPackages; [ ModuleBuild ];
             meta = {
               homepage = http://github.com/toddr/Safe-Hole;
               description = "Lib/Safe/Hole.pm";
-              license = with stdenv.lib.licenses; [ artistic1 gpl1Plus ];
+              license = with final.stdenv.lib.licenses; [ artistic1 gpl1Plus ];
             };
           };
         };
