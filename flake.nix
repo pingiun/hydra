@@ -511,10 +511,7 @@
             '';
           };
 
-        container = nixosConfigurations.container.config.system.build.toplevel;
-      };
-
-      tests.githubstatus =
+        tests.githubstatus.x86_64-linux =
         with import (nixpkgs + "/nixos/lib/testing.nix") { system = "x86_64-linux"; };
         simpleTest {
           machine = { pkgs, ... }: {
@@ -554,6 +551,9 @@
             $output =~ m!GithubStatus_Debug POSTing to.*repos/run/jobset/statuses!
               or die "GithubStatus plugin did not activate";
           '';
+      };
+
+        container = nixosConfigurations.container.config.system.build.toplevel;
       };
 
       checks.x86_64-linux.build = hydraJobs.build.x86_64-linux;
