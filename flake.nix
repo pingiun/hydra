@@ -550,7 +550,7 @@
               machine.succeed("systemctl stop hydra-notify")
               # Setup the project and jobset
               machine.succeed(
-                  "su - hydra -c 'perl -I ${build."x86_64-linux".perlDeps}/lib/perl5/site_perl ${./tests/github/setup.pl}' >&2"
+                  "su - hydra -c 'perl -I ${pkgs.hydra.perlDeps}/lib/perl5/site_perl ${./tests/github/setup.pl}' >&2"
               )
               machine.succeed("hydra-notify --once")
             '';
