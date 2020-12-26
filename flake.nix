@@ -512,46 +512,49 @@
           };
 
         tests.githubstatus.x86_64-linux =
-        with import (nixpkgs + "/nixos/lib/testing.nix") { system = "x86_64-linux"; };
-        simpleTest {
-          machine = { pkgs, ... }: {
-            imports = [ hydraServer ];
-            environment.systemPackages = [ pkgs.git ];
-            services.gitDaemon.enable = true;
-            services.hydra-dev.extraConfig = ''
-              <githubstatus>
-                jobs = sample:.*
-                inputs = src
-                test = 1
-              </githubstatus>
+          with import (nixpkgs + "/nixos/lib/testing-python.nix") { system = "x86_64-linux"; };
+          simpleTest {
+            machine = { pkgs, ... }: {
+              imports = [ hydraServer ];
+              environment.systemPackages = [ pkgs.git ];
+              services.gitDaemon.enable = true;
+              services.hydra-dev.extraConfig = ''
+                <githubstatus>
+                  jobs = sample:.*
+                  inputs = src
+                  test = 1
+                </githubstatus>
+              '';
+            };
+            testScript = ''
+              machine.wait_for_job("hydra-init")
+
+              # Create an admin account and some other state.
+              machine.succeed(
+                  """
+                      su - hydra -c \"hydra-create-user root --email-address 'alice\@example.org' --password foobar --role admin\""
+                      mkdir /run/jobset"
+                      chmod 755 /run/jobset"
+                      cp ${./tests/github/failing-job.nix} /run/jobset/default.nix"
+                      chmod 644 /run/jobset/default.nix"
+                      git config --global user.email root\@hydra-test.xyz; git config --global user.name root"
+                      cd /run/jobset && git init && git add . && git commit --all -m 'initial commit'"
+                      chown -R hydra /run/jobset"
+              """
+              )
+
+              # Wait until hydra-server can receive HTTP requests
+              machine.wait_for_job("hydra-server")
+              machine.wait_for_open_port("3000")
+              # running it manually to check stderr output
+              machine.succeed("systemctl stop hydra-notify")
+              # Setup the project and jobset
+              machine.succeed(
+                  "su - hydra -c 'perl -I ${build."x86_64-linux".perlDeps}/lib/perl5/site_perl ${./tests/github/setup.pl}' >&2"
+              )
+              machine.succeed("hydra-notify --once")
             '';
           };
-          testScript = ''
-            $machine->waitForJob("hydra-init");
-            # Create an admin account and some other state.
-            $machine->succeed
-                ( "su - hydra -c \"hydra-create-user root --email-address 'alice\@example.org' --password foobar --role admin\""
-                , "mkdir /run/jobset"
-                , "chmod 755 /run/jobset"
-                , "cp ${./tests/github/failing-job.nix} /run/jobset/default.nix"
-                , "chmod 644 /run/jobset/default.nix"
-                , "git config --global user.email root\@hydra-test.xyz; git config --global user.name root"
-                , "cd /run/jobset && git init && git add . && git commit --all -m 'initial commit'"
-                , "chown -R hydra /run/jobset"
-                );
-            # Wait until hydra-server can receive HTTP requests
-            $machine->waitForJob("hydra-server");
-            $machine->waitForOpenPort("3000");
-            # running it manually to check stderr output
-            $machine->stopJob("hydra-notify");
-            # Setup the project and jobset
-            $machine->succeed(
-              "su - hydra -c 'perl -I ${build."x86_64-linux".perlDeps}/lib/perl5/site_perl ${./tests/github/setup.pl}' >&2");
-            my $output = $machine->mustSucceed("hydra-notify --once 2>&1");
-            $output =~ m!GithubStatus_Debug POSTing to.*repos/run/jobset/statuses!
-              or die "GithubStatus plugin did not activate";
-          '';
-      };
 
         container = nixosConfigurations.container.config.system.build.toplevel;
       };
