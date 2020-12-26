@@ -514,7 +514,7 @@
         container = nixosConfigurations.container.config.system.build.toplevel;
       };
 
-      tests.githubstatus = genAttrs' (system:
+      tests.githubstatus =
         with import (nixpkgs + "/nixos/lib/testing.nix") { inherit system; };
         simpleTest {
           machine = { pkgs, ... }: {
@@ -554,7 +554,7 @@
             $output =~ m!GithubStatus_Debug POSTing to.*repos/run/jobset/statuses!
               or die "GithubStatus plugin did not activate";
           '';
-      });
+      };
 
       checks.x86_64-linux.build = hydraJobs.build.x86_64-linux;
       checks.x86_64-linux.install = hydraJobs.tests.install.x86_64-linux;
