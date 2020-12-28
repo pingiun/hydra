@@ -664,7 +664,7 @@ sub checkJobsetWrapped {
     };
     my $jobEvalError = $@;
     if ($jobEvalError) {
-        txn_do($db, sub {
+        $db->txn_do(sub {
             $db->storage->dbh->do("notify eval_failed, ?", undef,
                 # inputs are only saved to the DB once the jobset evaluation succeeds
                 # in this case, we have to pass them manually to the notify script
