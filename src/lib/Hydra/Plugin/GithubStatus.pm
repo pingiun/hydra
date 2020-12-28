@@ -239,8 +239,9 @@ sub postStatus {
         }
     }
 
-    print STDERR "Checking if this jobset has a flake";
+    print STDERR "Checking if this jobset has a flake\n";
     my $flake = $jobset->flake;
+    print STDERR "Checking flake $flake\n";
 
     if ($flake =~ /([0-9a-f]{40})/) {
         my $rev = $1;
@@ -260,7 +261,7 @@ sub postStatus {
         $req->content($body);
         my $res = $ua->request($req);
     } else {
-        print STDERR "Flake does not match sha1 regex";
+        print STDERR "Flake does not match sha1 regex\n";
     }
 }
 
