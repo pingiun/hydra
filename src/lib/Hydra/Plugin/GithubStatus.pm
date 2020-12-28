@@ -2,6 +2,7 @@ package Hydra::Plugin::GithubStatus;
 
 use strict;
 use parent 'Hydra::Plugin';
+use File::Slurp;
 use HTTP::Request;
 use JSON;
 use LWP::UserAgent;
@@ -214,7 +215,10 @@ sub postStatus {
             my $req = HTTP::Request->new('POST', $url);
             $req->header('Content-Type' => 'application/json');
             $req->header('Accept' => 'application/vnd.github.v3+json');
-            $req->header('Authorization' => ($self->{config}->{github_authorization}->{$owner} // $conf->{authorization}));
+            my $authorization = $self->{config}->{github_authorization}->{$owner} // $conf->{authorization};
+            my $token = read_file("/etc/hydra/authorization/$authorization");
+            $token =~ s/\s+//;
+            $req->header('Authorization' => "token $token");
             $req->content($body);
             my $res = $ua->request($req);
             my $limit = $res->header("X-RateLimit-Limit");
