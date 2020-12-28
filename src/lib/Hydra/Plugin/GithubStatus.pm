@@ -240,15 +240,16 @@ sub postStatus {
     }
 
     print STDERR "Checking if this jobset has a flake\n";
-    my $flake = $jobset->flake;
+    my $flake;
+    $flake = $jobset->flake;
     my $rev;
     print STDERR "Checking flake $flake\n";
 
     if ($flake =~ /([0-9a-f]{40})/) {
         $rev = $1;
     } else {
-        flake = getLatestFinishedEval($jobset)->flake;
-        $flake =~ /([0-9a-f]{40})/
+        $flake = getLatestFinishedEval($jobset)->flake;
+        $flake =~ /([0-9a-f]{40})/;
         $rev = $1;
     }
     if ($rev) {
