@@ -179,7 +179,7 @@ sub getContext {
 }
 
 sub postStatus {
-    my ($self, $conf, $jobName, $evalInputs, $body) = @_;
+    my ($self, $conf, $jobName, $evalInputs, $jobset, $body) = @_;
 
     my $ua = LWP::UserAgent->new();
     my $baseurl = $self->{config}->{'base_uri'} || "http://localhost:3000";
@@ -238,6 +238,29 @@ sub postStatus {
             }
         }
     }
+    print STDERR "Checking if this jobset has a flake";
+    my $flake = $jobset->flake;
+
+    if ($flake ~= m!([0-9a-f]{40})!) {
+        my $rev = $1;
+        print STDERR "Posting status for flake with rev $rev";
+        $flake ~= m!github(?:.com)?[:/]([^/]+)\/([^/]+?)[/\?$]!;
+        my $owner = $1;
+        my $repo = $2;
+        my $url = "${githubEndpoint}/repos/$owner/$repo/statuses/$rev";
+        next if $dry_run;
+        my $req = HTTP::Request->new('POST', $url);
+        $req->header('Content-Type' => 'application/json');
+        $req->header('Accept' => 'application/vnd.github.v3+json');
+        my $authorization = $self->{config}->{github_authorization}->{$owner} // $conf->{authorization};
+        my $token = read_file("/etc/hydra/authorization/$authorization");
+        $token =~ s/\s+//;
+        $req->header('Authorization' => "token $token");
+        $req->content($body);
+        my $res = $ua->request($req);
+    } else {
+        print STDERR "Flake does not match sha1 regex";
+    }
 }
 
 sub common {
@@ -254,7 +277,7 @@ sub common {
 
         foreach my $conf (@config) {
             next if !$finished && $b->finished == 1;
-            $self->postStatus($conf, $jobName, [$latestEval->jobsetevalinputs->all], {
+            $self->postStatus($conf, $jobName, [$latestEval->jobsetevalinputs->all], $b->jobset, {
                 state => $finished ? toGithubState($b->buildstatus) : "pending",
                 target_url => "$baseurl/build/".$b->id,
                 description => $conf->{description} // "Hydra build #" . $b->id . " of $jobName",
@@ -271,7 +294,7 @@ sub notifyFromEval {
     my $baseurl = $self->{config}->{'base_uri'} || "http://localhost:3000";
 
     foreach my $conf ($self->pluginConfig()) {
-        postStatus($self, $conf, $jobName, [$eval->jobsetevalinputs->all], {
+        postStatus($self, $conf, $jobName, [$eval->jobsetevalinputs->all], $jobset, {
             state => "error",
             target_url => "$baseurl/jobset/$project/$jobset#tabs-errors",
             description => $conf->{description} // "Failed to evaluate",
@@ -301,7 +324,7 @@ sub evalFailed {
     my $jobName = "$project:$jobset";
     my $baseurl = $self->{config}->{'base_uri'} || "http://localhost:3000";
     foreach my $conf ($self->pluginConfig()) {
-        postStatus($self, $conf, $jobName, $inputs, {
+        postStatus($self, $conf, $jobName, $inputs, $jobset, {
             state => "error",
             target_url => "$baseurl/jobset/$project/$jobset#tabs-errors",
             description => $conf->{description} // "Failed to evaluate",
@@ -317,7 +340,7 @@ sub evalFinished {
     my $jobName = "$project:$jobset";
     my $baseurl = $self->{config}->{'base_uri'} || "http://localhost:3000";
     foreach my $conf ($self->pluginConfig()) {
-        postStatus($self, $conf, $jobName, [$eval->jobsetevalinputs->all], {
+        postStatus($self, $conf, $jobName, [$eval->jobsetevalinputs->all], $jobset, {
             state => "success",
             target_url => "$baseurl/jobset/$project/$jobset",
             description => $conf->{description} // "Evaluated successfully",
