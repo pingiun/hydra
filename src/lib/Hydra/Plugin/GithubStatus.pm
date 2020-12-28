@@ -238,13 +238,14 @@ sub postStatus {
             }
         }
     }
+
     print STDERR "Checking if this jobset has a flake";
     my $flake = $jobset->flake;
 
-    if ($flake ~= m!([0-9a-f]{40})!) {
+    if ($flake =~ /([0-9a-f]{40})/) {
         my $rev = $1;
         print STDERR "Posting status for flake with rev $rev";
-        $flake ~= m!github(?:.com)?[:/]([^/]+)\/([^/]+?)[/\?$]!;
+        $flake =~ m!github(?:.com)?[:/]([^/]+)\/([^/]+?)[/\?$]!;
         my $owner = $1;
         my $repo = $2;
         my $url = "${githubEndpoint}/repos/$owner/$repo/statuses/$rev";
