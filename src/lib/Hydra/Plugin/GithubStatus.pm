@@ -240,11 +240,18 @@ sub postStatus {
     }
 
     print STDERR "Checking if this jobset has a flake\n";
-    my $flake = getLatestFinishedEval($jobset)->flake // $jobset->flake;
+    my $flake = $jobset->flake;
+    my $rev;
     print STDERR "Checking flake $flake\n";
 
     if ($flake =~ /([0-9a-f]{40})/) {
-        my $rev = $1;
+        $rev = $1;
+    } else {
+        flake = getLatestFinishedEval($jobset)->flake;
+        $flake =~ /([0-9a-f]{40})/
+        $rev = $1;
+    }
+    if ($rev) {
         print STDERR "Posting status for flake with rev $rev\n";
         $flake =~ m!github(?:.com)?[:/]([^/]+)/([^/]+?)(?:(?:/|\?).*)$!;
         my $owner = $1;
