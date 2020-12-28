@@ -240,7 +240,7 @@ sub postStatus {
     }
 
     print STDERR "Checking if this jobset has a flake\n";
-    my $flake = $jobset->flake;
+    my $flake = getLatestFinishedEval($jobset)->flake // $jobset->flake;
     print STDERR "Checking flake $flake\n";
 
     if ($flake =~ /([0-9a-f]{40})/) {
@@ -260,6 +260,7 @@ sub postStatus {
         $req->header('Authorization' => "token $token");
         $req->content($body);
         my $res = $ua->request($req);
+        die $res->decoded_content unless $res->is_success;
     } else {
         print STDERR "Flake does not match sha1 regex\n";
     }
