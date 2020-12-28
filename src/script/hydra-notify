@@ -12,8 +12,6 @@ STDERR->autoflush(1);
 STDOUT->autoflush(1);
 binmode STDERR, ":encoding(utf8)";
 
-my $once = $ARGV[0] eq '--once';
-
 my $config = getHydraConfig();
 
 my $db = Hydra::Model::DB->new();
@@ -140,10 +138,6 @@ for my $build ($db->resultset('Builds')->search(
     my $buildId = $build->id;
     print STDERR "sending notifications for build ${\$buildId}...\n";
     buildFinished($build);
-
-    if ($once) {
-        exit;
-    }
 }
 
 # Process incoming notifications.
@@ -194,10 +188,6 @@ while (1) {
             1;
         } or do {
             print STDERR "error processing message '$payload' on channel '$channelName': $@\n";
-        }
-
-        if ($once) {
-            exit;
         }
     }
 }
