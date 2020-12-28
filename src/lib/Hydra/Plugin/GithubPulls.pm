@@ -6,6 +6,7 @@ use HTTP::Request;
 use LWP::UserAgent;
 use JSON;
 use Hydra::Helper::CatalystUtils;
+use File::Slurp;
 use File::Temp;
 use POSIX qw(strftime);
 
@@ -15,10 +16,10 @@ sub supportedInputTypes {
 }
 
 sub _iterate {
-    my ($url, $auth, $pulls, $ua) = @_;
+    my ($url, $token, $pulls, $ua) = @_;
     my $req = HTTP::Request->new('GET', $url);
     $req->header('Accept' => 'application/vnd.github.v3+json');
-    $req->header('Authorization' => $auth) if defined $auth;
+    $req->header('Authorization' => "token $token") if defined $token;
     my $res = $ua->request($req);
     my $content = $res->decoded_content;
     die "Error pulling from the github pulls API: $content\n"
@@ -38,7 +39,7 @@ sub _iterate {
             last;
         }
     }
-    _iterate($next, $auth, $pulls, $ua) unless $next eq "";
+    _iterate($next, $token, $pulls, $ua) unless $next eq "";
 }
 
 sub fetchInput {
@@ -46,10 +47,11 @@ sub fetchInput {
     return undef if $type ne "githubpulls";
     # TODO Allow filtering of some kind here?
     (my $owner, my $repo) = split ' ', $value;
-    my $auth = $self->{config}->{github_authorization}->{$owner};
+    my $token = read_file("/etc/hydra/authorization/$owner");
+    $token =~ s/\s+//;
     my %pulls;
     my $ua = LWP::UserAgent->new();
-    _iterate("https://api.github.com/repos/$owner/$repo/pulls?per_page=100", $auth, \%pulls, $ua);
+    _iterate("https://api.github.com/repos/$owner/$repo/pulls?per_page=100", $token, \%pulls, $ua);
     my $tempdir = File::Temp->newdir("github-pulls" . "XXXXX", TMPDIR => 1);
     my $filename = "$tempdir/github-pulls.json";
     open(my $fh, ">", $filename) or die "Cannot open $filename for writing: $!";
