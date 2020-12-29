@@ -262,13 +262,13 @@ sub push_github_pr : Chained('api') PathPart('push-github-pr') Args(0) {
     my $repo = $in->{repository}->{name} or die "no repo name";
 
     # .jobsets should be triggered, if it has this repo as a pullRequestsJSON input
-    if ($action == 'opened' || $action == 'reopened' || $action == 'closed') {
+    if ($action eq 'opened' || $action eq 'reopened' || $action eq 'closed') {
         triggerJobset($self, $c, $_, 0) foreach $c->model('DB::Jobsets')->search(
             { 'project.enabled' => 1, 'me.enabled' => 1, 'me.name' => '.jobsets' },
             { join => 'project'
             , where => \ [ 'exists (select 1 from JobsetInputAlts where project = me.project and jobset = me.name and input = \'pullRequestsJSON\' and value = ?)', [ 'value', "$owner $repo" ] ]
             });
-    } elsif ($action == 'synchronize') {
+    } elsif ($action eq 'synchronize') {
         # This requires you to name PR jobsets as the number of the PR
         triggerJobset($self, $c, $_, 0) foreach $c->model('DB::Jobsets')->search(
             { 'project.enabled' => 1, 'me.enabled' => 1, 'me.name' => $pr_num },
