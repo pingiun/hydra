@@ -15,4 +15,4 @@ if [ ! -f ./.hydra-data/hydra.conf ]; then
 use-substitutes = true
 EOF
 fi
-HYDRA_CONFIG=$(pwd)/.hydra-data/hydra.conf exec hydra-dev-server --port 63333
+HYDRA_CONFIG=$(pwd)/.hydra-data/hydra.conf exec hydra-dev-server -d -r --port 63333
