@@ -263,7 +263,7 @@ sub push_github : Chained('api') PathPart('push-github') Args(0) {
     print STDERR "got push from GitHub repository $owner/$repo\n";
 
     triggerJobset($self, $c, $_, 0) foreach $c->model('DB::Jobsets')->search(
-        { 'project.enabled' => 1, 'me.enabled' => 1, 'me.name' => '.jobsets' },
+        { 'project.enabled' => 1, 'me.enabled' => 1 },
         { join => 'project'
         , where => \ [ 'me.flake like ? or exists (select 1 from JobsetInputAlts where project = me.project and jobset = me.name and value like ?)', [ 'flake', "%github%$owner/$repo%"], [ 'value', "%github.com%$owner/$repo%" ] ]
         });
