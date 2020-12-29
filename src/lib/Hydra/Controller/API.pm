@@ -287,14 +287,18 @@ sub push_github : Chained('api') PathPart('push-github') Args(0) {
     $c->{stash}->{json}->{jobsetsTriggered} = [];
 
     my $in = $c->request->{data};
-    my $owner = $in->{repository}->{owner}->{name} or die;
-    my $repo = $in->{repository}->{name} or die;
+    my $owner = $in->{repository}->{owner}->{login} or die "no owner";
+    my $repo = $in->{repository}->{name} or die "no repo";
+    $in->{'ref'} =~ m!refs/heads/([^/]+)$!;
+    my $branch = $1;
+
     print STDERR "got push from GitHub repository $owner/$repo\n";
 
+    # This requires you to name a jobset according do the branch name they use
     triggerJobset($self, $c, $_, 0) foreach $c->model('DB::Jobsets')->search(
         { 'project.enabled' => 1, 'me.enabled' => 1 },
         { join => 'project'
-        , where => \ [ '(me.name = \'.jobsets\' or me.flake like ? or exists (select 1 from JobsetInputAlts where project = me.project and jobset = me.name and value like ?))', [ 'flake', "%github%$owner/$repo%"], [ 'value', "%github.com%$owner/$repo%" ] ]
+        , where => \ [ '(me.name = ?) and (me.flake like ? or exists (select 1 from JobsetInputAlts where project = me.project and jobset = me.name and value like ?))', [ 'name', $branch ], [ 'flake', "%github%$owner/$repo%"], [ 'value', "%github.com%$owner/$repo%" ] ]
         });
     $c->response->body("");
 }
