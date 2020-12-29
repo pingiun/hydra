@@ -42,7 +42,7 @@ sub updateDeclarativeJobset {
         emailoverride
         keepnr
     );
-    my %update = ( name => $jobsetName );
+    my %update = ( name => $jobsetName, triggertime => time );
     foreach my $key (@allowed_keys) {
         # do not pass missing data to let psql assign the default value
         next unless defined $declSpec->{$key};
