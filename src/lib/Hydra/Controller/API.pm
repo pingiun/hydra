@@ -272,9 +272,9 @@ sub push_github_pr : Chained('api') PathPart('push-github-pr') Args(0) {
     } elsif ($action eq 'synchronize') {
         # This requires you to name PR jobsets as the number of the PR
         triggerJobset($self, $c, $_, 0) foreach $c->model('DB::Jobsets')->search(
-            { 'project.enabled' => 1, 'me.enabled' => 1, 'me.name' => $pr_num },
+            { 'project.enabled' => 1, 'me.enabled' => 1 },
             { join => 'project'
-            , where => \ [ '(me.flake like ? or exists (select 1 from JobsetInputAlts where project = me.project and jobset = me.name and value like ?))', [ 'flake', "%github%$owner/$repo%"], [ 'value', "%github.com%$owner/$repo%" ] ]
+            , where => \ [ 'me.name like ? and (me.flake like ? or exists (select 1 from JobsetInputAlts where project = me.project and jobset = me.name and value like ?))', [ 'name', "%$pr_num%" ], [ 'flake', "%github%$owner/$repo%"], [ 'value', "%github.com%$owner/$repo%" ] ]
             });
     } else {
         error($c, "Doing nothing with action $action");
@@ -299,7 +299,7 @@ sub push_github : Chained('api') PathPart('push-github') Args(0) {
     triggerJobset($self, $c, $_, 0) foreach $c->model('DB::Jobsets')->search(
         { 'project.enabled' => 1, 'me.enabled' => 1 },
         { join => 'project'
-        , where => \ [ '(me.name = ?) and (me.flake like ? or exists (select 1 from JobsetInputAlts where project = me.project and jobset = me.name and value like ?))', [ 'name', $branch ], [ 'flake', "%github%$owner/$repo%"], [ 'value', "%github.com%$owner/$repo%" ] ]
+        , where => \ [ '(me.name like ?) and (me.flake like ? or exists (select 1 from JobsetInputAlts where project = me.project and jobset = me.name and value like ?))', [ 'name', "%$branch%" ], [ 'flake', "%github%$owner/$repo%"], [ 'value', "%github.com%$owner/$repo%" ] ]
         });
     $c->response->body("");
 }
