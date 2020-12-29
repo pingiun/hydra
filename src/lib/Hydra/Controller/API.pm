@@ -249,6 +249,7 @@ sub push : Chained('api') PathPart('push') Args(0) {
         $c,
         entity => { jobsetsTriggered => $c->stash->{json}->{jobsetsTriggered} }
     );
+    $c->response->body("");
 }
 
 sub push_github_pr : Chained('api') PathPart('push-github-pr') Args(0) {
