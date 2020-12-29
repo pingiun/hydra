@@ -251,6 +251,35 @@ sub push : Chained('api') PathPart('push') Args(0) {
     );
 }
 
+sub push_github_pr : Chained('api') PathPart('push-github-pr') Args(0) {
+    my ($self, $c) = @_;
+
+    $c->{stash}->{json}->{jobsetsTriggered} = [];
+    my $in = $c->request->{data};
+    my $action = $in->{action} or die "no action";
+    my $pr_num = $in->{number} or die "no pr number";
+    my $owner = $in->{repository}->{owner}->{login} or die "no repo owner";
+    my $repo = $in->{repository}->{name} or die "no repo name";
+
+    # .jobsets should be triggered, if it has this repo as a pullRequestsJSON input
+    if ($action == 'opened' || $action == 'reopened' || $action == 'closed') {
+        triggerJobset($self, $c, $_, 0) foreach $c->model('DB::Jobsets')->search(
+            { 'project.enabled' => 1, 'me.enabled' => 1, 'me.name' => '.jobsets' },
+            { join => 'project'
+            , where => \ [ 'exists (select 1 from JobsetInputAlts where project = me.project and jobset = me.name and input = \'pullRequestsJSON\' and value = ?)', [ 'value', "$owner $repo" ] ]
+            });
+    } elsif ($action == 'synchronize') {
+        # This requires you to name PR jobsets as the number of the PR
+        triggerJobset($self, $c, $_, 0) foreach $c->model('DB::Jobsets')->search(
+            { 'project.enabled' => 1, 'me.enabled' => 1, 'me.name' => $pr_num },
+            { join => 'project'
+            , where => \ [ 'me.flake like ? or exists (select 1 from JobsetInputAlts where project = me.project and jobset = me.name and value like ?))', [ 'flake', "%github%$owner/$repo%"], [ 'value', "%github.com%$owner/$repo%" ] ]
+            });
+    } else {
+        error($c, "Doing nothing with action $action");
+    }
+    $c->response->body("");
+}
 
 sub push_github : Chained('api') PathPart('push-github') Args(0) {
     my ($self, $c) = @_;
