@@ -22,8 +22,12 @@ sub buildFinished {
 
     my $jobName = showJobName $build;
 
+    print STDERR "Build finished for $jobName and maybe doing github deploy\n";
+
     foreach my $conf (@config) {
         next unless $jobName =~ /^$conf->{jobs}$/;
+
+        print STDERR "There is a github deploy config for $jobName\n";
 
         my $flake;
         $flake = $b->jobset->flake;
@@ -62,6 +66,8 @@ sub buildFinished {
 
         $req->content($body);
         my $res = $ua->request($req);
+        die $res->decoded_content unless $res->is_success;
+        print STDERR $res->decoded_content . "\n";
     }
 }
 
