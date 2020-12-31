@@ -30,13 +30,13 @@ sub buildFinished {
         print STDERR "There is a github deploy config for $jobName\n";
 
         my $flake;
-        $flake = $b->jobset->flake;
+        $flake = $build->jobset->flake;
         my $rev;
 
         if ($flake =~ /([0-9a-f]{40})/) {
             $rev = $1;
         } else {
-            $flake = getLatestFinishedEval($b->jobset)->flake;
+            $flake = getLatestFinishedEval($build->jobset)->flake;
             $flake =~ /([0-9a-f]{40})/;
             $rev = $1;
         }
