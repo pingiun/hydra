@@ -32,7 +32,7 @@ sub buildFinished {
         if ($flake =~ /([0-9a-f]{40})/) {
             $rev = $1;
         } else {
-            $flake = getLatestFinishedEval($jobset)->flake;
+            $flake = getLatestFinishedEval($b->jobset)->flake;
             $flake =~ /([0-9a-f]{40})/;
             $rev = $1;
         }
