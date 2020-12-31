@@ -2,6 +2,7 @@ package Hydra::Plugin::GithubDeploys;
 
 use strict;
 use parent 'Hydra::Plugin';
+use File::Slurp;
 use HTTP::Request;
 use JSON;
 use LWP::UserAgent;
