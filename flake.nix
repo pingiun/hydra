@@ -547,12 +547,11 @@
               machine.wait_for_job("hydra-server")
               machine.wait_for_open_port("3000")
               # running it manually to check stderr output
-              machine.succeed("systemctl stop hydra-notify")
               # Setup the project and jobset
               machine.succeed(
                   "su - hydra -c 'perl -I ${pkgs.hydra.perlDeps}/lib/perl5/site_perl ${./tests/github/setup.pl}' >&2"
               )
-              machine.succeed("hydra-notify --once")
+              machine.wait_until_succeeds("journalctl -u hydra-notify.service | grep -G 'GithubStatus_Debug POSTing to.*repos/run/jobset/statuses'")
             '';
           };
 

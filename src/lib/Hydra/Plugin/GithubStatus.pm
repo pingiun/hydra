@@ -211,6 +211,8 @@ sub postStatus {
             my $owner = $1;
             my $repo = $2;
             my $url = "${githubEndpoint}/repos/$owner/$repo/statuses/$rev";
+            print STDERR "GithubStatus_Debug POSTing to '", $url, "'\n";
+            print STDERR ">> $body\n";
             next if $dry_run;
             my $req = HTTP::Request->new('POST', $url);
             $req->header('Content-Type' => 'application/json');
