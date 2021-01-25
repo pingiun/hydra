@@ -162,13 +162,6 @@ create table Builds (
     isChannel     integer not null default 0, -- meta.isHydraChannel
     isCurrent     integer default 0,
 
-    -- Copy of the nixExprInput/nixExprPath fields of the jobset that
-    -- instantiated this build.  Needed if we want to reproduce this
-    -- build.  FIXME: this should be stored in JobsetEvals, storing it
-    -- here is denormal.
-    nixExprInput  text,
-    nixExprPath   text,
-
     -- Priority within a jobset, set via meta.schedulingPriority.
     priority      integer not null default 0,
 
@@ -440,6 +433,9 @@ create table JobsetEvals (
     project       text not null,
     jobset        text not null,
 
+    errorMsg      text, -- error output from the evaluator
+    errorTime     integer, -- timestamp associated with errorMsg
+
     timestamp     integer not null, -- when this entry was added
     checkoutTime  integer not null, -- how long obtaining the inputs took (in seconds)
     evalTime      integer not null, -- how long evaluation took (in seconds)
@@ -463,6 +459,8 @@ create table JobsetEvals (
     nrSucceeded   integer, -- set lazily when all builds are finished
 
     flake         text, -- immutable flake reference
+    nixExprInput  text, -- name of the jobsetInput containing the Nix or Guix expression
+    nixExprPath   text, -- relative path of the Nix or Guix expression
 
     foreign key   (project) references Projects(name) on delete cascade on update cascade,
     foreign key   (project, jobset) references Jobsets(project, name) on delete cascade on update cascade
@@ -613,6 +611,8 @@ create index IndexJobsetEvalMembersOnEval on JobsetEvalMembers(eval);
 create index IndexJobsetInputAltsOnInput on JobsetInputAlts(project, jobset, input);
 create index IndexJobsetInputAltsOnJobset on JobsetInputAlts(project, jobset);
 create index IndexProjectsOnEnabled on Projects(enabled);
+create index IndexBuildOutputsPath on BuildOutputs using hash(path);
+
 
 --  For hydra-update-gc-roots.
 create index IndexBuildsOnKeep on Builds(keep) where keep = 1;
